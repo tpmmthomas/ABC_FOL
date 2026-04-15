@@ -238,7 +238,7 @@ blockP(Proof, TheoryState, SuffGoals, [incomp, ([RepPlan], [TargCl]), ClS]):-
             
             (
             % CR4: increase arguemnt
-            notin([arity(P)], ProtectedList), %notEss2suff(SuffGoals, TargCl),
+            notin(arity(P), ProtectedList), %notEss2suff(SuffGoals, TargCl),
              RepPlan = arityInc(P, TargLit, TargCl,OrgLit, RInpCl2); %
 
             % CR1: rename predicate
@@ -322,7 +322,7 @@ blockP(Proof, TheoryState, SuffGoals, [incomp, ([RepPlan], [TargCl]), ClS]):-
                    notin([+[P|ArgsTem]], [RInpCl1, RInpCl2])),
                       [_|_]),
              % and if 2.P is not under protected,
-             notin([arity(P)], ProtectedList),
+             notin(arity(P), ProtectedList),
              % then the goal literal could be the unique one.
              RepPlan = arityInc(P, TargLit, TargCl, InpClLit, RInpCl1))) 
              ),
@@ -808,7 +808,7 @@ blockPFunc(PredTarg,PredOrg,TargCl,InpCl,TheoryState,SuffGoals,RepPlan):-
     %Repair strategies that target InpCl1 (which is the right side of unification, the input clause)       
         (
         % CR4: increase arguemnt
-        notin([arity(P)], ProtectedList), %notEss2suff(SuffGoals, TargCl),
+        notin(arity(P), ProtectedList), %notEss2suff(SuffGoals, TargCl),
         notin(P,ProtectedList),
         RepPlan = arityInc(P, PredTarg, TargCl,PredOrg, InpCl); %
 

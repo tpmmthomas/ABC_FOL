@@ -72,7 +72,13 @@ initTheoryNew(Theory):-
         assert(spec(heuris(HeursNew))),!;
         assert(spec(heuris(HeursOld)))),
     length(Theory, Size),
-    assert(spec(inputTheorySize(Size))).
+    assert(spec(inputTheorySize(Size))),
+    % Initialize loopLimit spec from the evaluation file (must be after specification/0 which clears all specs)
+    (current_predicate(loopLimit/1) -> loopLimit(LLimit), retractall(spec(loopLimit(_))), assert(spec(loopLimit(LLimit)));true),
+    % Initialize costLimit from the evaluation file
+    (current_predicate(costLimit/1) -> costLimit(CL), retractall(spec(costLimit(_))), assert(spec(costLimit(CL)));true),
+    % Initialize roundLimit from the evaluation file
+    (current_predicate(roundLimit/1) -> roundLimit(RLim), retractall(spec(roundLimit(_))), assert(spec(roundLimit(RLim)));true).
     %nl, write_term_c('Complete initialising the input theory, signature and the preferred structure.'),nl.   % Get all sentences from both the theory and the preferred structure.
 
 
@@ -85,7 +91,8 @@ specification:- retractall(spec(_)),
                                 spec(proofStatus(0)),
                                 spec(threshold(1)),
                                 spec(roundNum(0)),
-                                spec(proofNum(0))
+                                spec(proofNum(0)),
+                                spec(loopLimit(0))
                                 ]).
 supplyInput:-
     (\+trueSet(_)-> assert(trueSet([])),!;true),
@@ -231,7 +238,8 @@ initProtList:-
     findall(Item,
             ( member(Item1, ProList),
               (is_list(Item1)->
-                  convertClause(Item1, Item);
+                  convertClause(Item1, ItemC),
+                  orderAxiom(ItemC, Item);
                   Item1 = Item)),
             Protected),
 

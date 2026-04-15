@@ -55,7 +55,7 @@ makeOccurFail(TargCl, TargLit, VV,VCons, _, RepPlan):-
     is_func(Con), 
     Con = [FuncN | _],
     prop(TargLit, [P|Args]),
-    notin([arity(P)], ProtectedList),
+    notin(arity(P), ProtectedList),
     append(Con, [vble(Trg)],NewVar),
     replacePos(Pos,Args,NewVar,NewArg),
     addSameSign(TargLit,[P|NewArg],NewLit),
@@ -81,7 +81,7 @@ makeOccurFail(TargCl, TargLit, VV,VCons, _, RepPlan):-
     is_func(Con), 
     Con = [FuncN | _],
     TargLit = [P|Args],
-    notin([arity(P)], ProtectedList),
+    notin(arity(P), ProtectedList),
     append(Con, [vble(Trg)],NewVar),
     replacePos(Pos,Args,NewVar,NewArg),
     NewLit = [P|NewArg],
@@ -100,6 +100,8 @@ makeOccurFail(TargCl, TargLit, VV,VCons, _, RepPlan):-
 ************************************************************************************************************************/
 mergePlan(Mismatches, [PG| ArgsG], TargetLit, TargCl, TheoryIn, RepPlan, TargCls):-
     Mismatches = (predicate, ArgDiff),
+    spec(heuris(Heuristics)),
+    notin(noMerge, Heuristics),
     spec(protList(ProtectedList)),
     flatten(ProtectedList, ProtectedListF),
     % Get the predicate in the targeted literal
@@ -175,6 +177,8 @@ renameArgs(Mismatches, Nth, Evi, SuffGoals, MisNum, TheoryIn, RepPlan, TargCls):
 % generate reformation repair plan of extend a constant to a variable when the predicate is matched but arguments.
 extCons2Vble(Mismatches, Nth, Evi, MisNum, OrgCl, TheoryIn, RepPlan, TargCls):-
     Mismatches = [_|_],
+    spec(heuris(Heuristics)),
+    notin(noExtC2V, Heuristics),
     spec(protList(ProtectedList)),
     %((Mismatches =  [([load3], [load1])]; Mismatches =  [([load1], [load3])])->pause;true),
     findall([(COrig, C1Cl), C1Cl],

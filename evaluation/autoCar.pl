@@ -25,6 +25,7 @@ trueSet([checkInjury(a1,b1),checkInjury(a2,b2),legalLiable(a2,x2),legalLiable(p1
 trueRules([[-accident(\c,\d),+legalLiable(f(\c,\d),\c)]]).
 falseSet([legalLiable(a1,x1),legalLiable(p2,x2)]).
 
+
 % for all accidents, there is at least one who is the legal reliable.
 % For all x,y accident(x,y) => exists a, legalLiable(a,x)
 % [-accident(\x,\y),+legalLiable(f(\x,\y),\x)] (Need to try for all x,y)

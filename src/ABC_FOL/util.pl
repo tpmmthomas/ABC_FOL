@@ -204,7 +204,7 @@ asserProCheck([+[P|_]], ProtectedList):-
 compose1([], SublistIn, SublistIn) :- !.
 compose1(Sub, SublistIn, SublistOut) :-     % Append new substitution
     subst(Sub, SublistIn, SublistMid),        % after applying it to the old one
-    (Sub = [_]-> append(Sub, SublistMid, SubTem);
+    (is_list(Sub) -> append(Sub, SublistMid, SubTem);
      Sub = _/_-> SubTem = [Sub|SublistMid]),
     sort(SubTem, SublistOut).     % remove duplicates.
 
@@ -934,7 +934,8 @@ rewriteVble(_, [], [], []):- !.
 rewriteVble(Goals, InputClause, ClNew, AllSubs):-
     % generate substitutions which replace old variable vble(X) with its new name vble(NewX).
     findall(vble(NewX)/vble(X),
-            (member([_|Args], Goals),
+            (member(SignedLit, Goals),
+             (SignedLit = -[_|Args]; SignedLit = +[_|Args]; SignedLit = [_|Args]),
              memberNested(vble(X), Args),
              member(Literal, InputClause),
              ( Literal = -[_| ArgsInCl];

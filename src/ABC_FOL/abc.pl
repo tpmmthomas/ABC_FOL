@@ -158,65 +158,89 @@ detInsInc(TheoryState,FaultState):-
            InComps),             % Find all incompatibilities.
 
     writeLog([nl, write_term_c('---------InComps are------'),nl, write_term_All(InComps), finishLog]),
-    % write_term_c('---------InComps are------'),nl, write_term_All(InComps),nl, 
-    % detect the inconsistencies due to the violation of constrains
-    findall((Constrain, UnwProofs),
-              (member(Constrain, Theory),        % get a constrain axiom from the theory.
-               notin(+_, Constrain),
-               retractall(spec(proofNum(_))), assert(spec(proofNum(0))),
-               findall(Proof,
-                        slRL(Constrain, Theory,  EC, Proof, [], []),
-                        UnwProofsT),
-                sort(UnwProofsT,UnwProofs),
-                UnwProofs \= []),
-          Violations),
-      writeLog([nl, write_term_c('---------Violations are------'),nl, write_term_All(Violations), finishLog]),
-    %   write_term_c('---------Violations are------'),nl, write_term_All(Violations),nl,
-    %   write_term_c('-----end---------'),nl,nl,
-    % Find all problems regarding the true rules
+
+    % ====== Process trueRules BEFORE violations ======
+    % trueRules insufficiency goals need to augment the theory so violation constraints can see them.
     retractall(spec(avoids(_))),assert(spec(avoids([]))),
     findall([RuleSuff,RuleInSuff],
         (
-            member(TR, TrueRules),%One of the rule
-            member(-[Pre|Args], TR), %The negative literal in the rule
-            Goal = [-[Pre|Args]], %The goal
-            retractall(spec(proofNum(_))), assert(spec(proofNum(0))),
-            findall(Proof,
-                    slRL(Goal, Theory, EC, Proof, [], []),
-                    ProofT), % List of Subst for precondition
-            member(Pf, ProofT), %Get 1 member for the substitution
-            combineSubs([],Pf,Subs),% Combine all substitution for original Goal 
-            member(+[Pred2|Args2],TR),%Get the positive Goal
-            subst(Subs,Args2,ArgsSubst),%Apply the substitution
+            member(TR, TrueRules),
+            % Get preconditions and head from the trueRule
+            findall(-[Pre|Args], member(-[Pre|Args], TR), GoalLits),
+            GoalLits \= [],
+            member(+[Pred2|Args2], TR),
+            % Prove preconditions ONE AT A TIME, accumulating substitutions.
+            % This avoids the combineSubs bug where variable chains through
+            % intermediate clause variables are lost in multi-literal proofs.
+            provePrecondsAccum(GoalLits, Theory, EC, [], Subs),
+            subst(Subs, Args2, ArgsSubst),
             spec(avoids(AvoidListOld)),
-            append(Theory,[[-[Pre|Args]]],AvoidList1),
-            append(AvoidList1,[[+[Pred2|Args2]]],AvoidList),%Add the literals to the avoid list
+            append(Theory,[GoalLits],AvoidList1),
+            append(AvoidList1,[[+[Pred2|Args2]]],AvoidList),
             findall(X,
             (   member(Cl,AvoidList),
                 (member(+[_| Arg], Cl);
                 member(-[_| Arg], Cl)),
                 memberNested(vble(X), Arg)),
-            AvoidVbles), %Get all the variables in the avoid list
+            AvoidVbles),
             append(AvoidListOld,AvoidVbles,AvoidVblesNew),
             sort(AvoidVblesNew,AvoidVblesSorted),
             retractall(spec(avoids(_))),assert(spec(avoids(AvoidVblesSorted))),
-            removeFunc(ArgsSubst,ArgsFinal),%Remove functions and replace with new variables
+            removeFunc(ArgsSubst,ArgsFinal),
             ConsGoal = [-[Pred2|ArgsFinal]],
-            findall( [Proof, Evidence],
-                     (slRL(ConsGoal, Theory, EC, Proof, Evidence, [])),
+            % Exclude the trueRule itself when checking if head is already provable
+            delete(Theory, TR, TheoryWithoutTR),
+            findall( [Proof2, Evidence],
+                     (slRL(ConsGoal, TheoryWithoutTR, EC, Proof2, Evidence, [])),
                      Proofs1T),
             sort(Proofs1T,Proofs1),
             transposeF(Proofs1, [Proofs, Evis]),
             (Proofs = []-> RuleSuff = [], RuleInSuff = (ConsGoal, Evis);
                Proofs = [_|_]-> RuleSuff = (ConsGoal,Proofs), RuleInSuff=[])
-            %This time find all the proofs that fail for that goal
         ),
     TrueRuleProblems),
     transposeF(TrueRuleProblems, [Suffs2, InSuffs2]),
+
+    writeLog([nl, write_term_c('---------TrueRules Suffs------'),nl, write_term_All(Suffs2),
+              nl, write_term_c('---------TrueRules InSuffs------'),nl, write_term_All(InSuffs2), finishLog]),
+
+    % ====== Collect trueRules insufficiency heads as temp assertions ======
+    findall([+[Pred3|InsufArgs3]],
+        (member([_, RI], TrueRuleProblems), RI \= [], RI = ([-[Pred3|InsufArgs3]], _)),
+        TRInsufHeads),
+
+    % Add temp assertions to protection list (so repair planner won't target them)
+    spec(protList(CurrentProtList)),
+    subtract(TRInsufHeads, CurrentProtList, NewProtItems),
+    (NewProtItems \= [] ->
+        append(CurrentProtList, NewProtItems, UpdatedProtList),
+        retractall(spec(protList(_))),
+        assert(spec(protList(UpdatedProtList)))
+    ; true),
+
+    % Augment theory with temp assertions for constraint/violation detection
+    append(Theory, TRInsufHeads, AugmentedTheory),
+
+    writeLog([nl, write_term_c('---------TrueRules temp axioms------'),nl, write_term_All(TRInsufHeads), finishLog]),
+
+    % ====== Detect violations from constraints (against augmented theory) ======
+    % With temp assertions, the uniqueness constraint can fire on conflicting facts.
+    % Without a constraint, no violations are detected — only insufficiencies remain.
+    findall((Constrain, UnwProofs),
+              (member(Constrain, AugmentedTheory),
+               notin(+_, Constrain),
+               retractall(spec(proofNum(_))), assert(spec(proofNum(0))),
+               findall(Proof3,
+                        slRL(Constrain, AugmentedTheory, EC, Proof3, [], []),
+                        UnwProofsT),
+                sort(UnwProofsT,UnwProofs),
+                UnwProofs \= []),
+          Violations),
+    writeLog([nl, write_term_c('---------Violations are------'),nl, write_term_All(Violations), finishLog]),
+
+    % ====== Combine all faults ======
     append(Suffs,Suffs2,Suffs3),
     append(InSuffs,InSuffs2,InSuffs3),
-    % print(InSuffs3),nl,halt,
-    %If there are problem, then add to Insuffs
     append(InComps, Violations, Unwanted),
     FaultState = (Suffs3, InSuffs3, Unwanted).
 /**********************************************************************************************************************
@@ -434,3 +458,28 @@ mR([H|Rest], SIn, Sout):-
 % H is not in SIn yet
 mR([H|Rest], SIn, Sout):-
     mR(Rest, [H| SIn], Sout).
+
+
+/**********************************************************************************************************************
+    provePrecondsAccum(GoalLits, Theory, EC, SubsIn, SubsOut):
+            Prove trueRule preconditions one at a time, accumulating substitutions.
+            This avoids the combineSubs bug where variable chains through intermediate
+            clause variables are lost when updateOldCls skips steps with RemNum=[0,0].
+    Input:  GoalLits: list of negative literals to prove, e.g., [-[perception,vble(y),vble(x)], -[reachable,vble(y),vble(z)]]
+            Theory: the current theory
+            EC: equality classes
+            SubsIn: accumulated substitutions so far
+    Output: SubsOut: complete substitutions after proving all preconditions
+************************************************************************************************************************/
+provePrecondsAccum([], _, _, Subs, Subs).
+provePrecondsAccum([Lit|Rest], Theory, EC, SubsIn, SubsOut) :-
+    % Apply accumulated subs to this literal
+    subst(SubsIn, [Lit], [LitGround]),
+    retractall(spec(proofNum(_))), assert(spec(proofNum(0))),
+    slRL([LitGround], Theory, EC, Proof, [], []),
+    % Extract subs from this single-literal proof
+    combineSubs([], Proof, StepSubs),
+    % Compose with accumulated subs
+    compose1(StepSubs, SubsIn, SubsNew),
+    % Apply new subs to remaining literals and continue
+    provePrecondsAccum(Rest, Theory, EC, SubsNew, SubsOut).

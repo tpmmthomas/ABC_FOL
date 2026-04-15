@@ -442,6 +442,8 @@ resolveEqu(Goals, Deriv, _, [], Evidence, [], _):-
             PredType: the type of the predicate of the resolved subgoal: secondNum for = or \=, and firstNum for others.
     Output: DerivOut: the record of all derivation steps.
 ************************************************************************************************************************/
+updateDeriv([], reorder, []):- !.
+
 updateDeriv(Deriv, reorder, DerivNew):-
     findall(E,
             (member(E, Deriv),
@@ -523,8 +525,19 @@ noloopBack([], _):- !.    % empty goal clause could not cause a loop.
 noloopBack(_, []):- !.
 noloopBack(_, Deriv):-         % a loop is found when there is already an empty goal clause.
     member((_, _, _, [], _), Deriv), fail, !.
+% loopLimit(-1): completely disable loop detection (relies on proof depth limit only).
+noloopBack(_, _):-
+    spec(loopLimit(-1)), !.
 % The current goal is more complicated than a previous goal if all of the previous subgoals can be resolved with a proposition in the current goal.
-noloopBack(GoalsCur, Deriv):-
+noloopBack(GoalsCur, DerivFull):-
+    % loopLimit(N) with N > 0: only check against the last N derivation steps.
+    (spec(loopLimit(N)), N > 0 ->
+        length(DerivFull, DLen),
+        Min is min(N, DLen),
+        length(Deriv, Min),
+        append(Deriv, _, DerivFull)
+    ;
+        Deriv = DerivFull),
     % Check for any previous goal PreGoal,
     (forall(member((_, _, _, PreGoal, _), Deriv),
             %there is a subgoal PreSubG which cannot be resolved with any subgoal in the current goal GoalCur.
