@@ -1,0 +1,66 @@
+date(2026,4,15)
+----------------------------------------------------------------------------------
+Theory size: 11
+Faults Number: 2,1
+Cost Limit is: 50
+RoundLimit is: 100
+Running time: 116 ms.
+Heuristics applied:[noAss2Rule,noExtC2V,noAxiomAdd]
+The protected item(s):[[+[perception,vble(z),vble(x)],-[perception,vble(y),vble(x)],-[reachable,vble(y),vble(z)]],[-[perception,vble(p),vble(q)],-[perception,vble(p),vble(r)],-[\=,vble(q),vble(r)]],perception,arity(perception),[arity(perception)],[perception],[+[perception,[med],[ped]]],[+[perception,[end],[ped]]]]
+Total Solution number is: 1
+Remaining semi-repaired theories: 0
+----------------------------------------------------------------------------------
+The original theory : 
+[+path(end)].
+[+path(med)].
+[+path(start)].
+[+nexti(med,end)].
+[+nexti(start,med)].
+[+perception(end,under)].
+[+perception(med,ufo)].
+[+perception(start,ped)].
+[+reachable(\x,\y),-nexti(\x,\y)].
+[+reachable(\x1,\z1),-nexti(\y1,\z1),-reachable(\x1,\y1)].
+[- (\q\= \r),-perception(\p,\q),-perception(\p,\r)].
+
+The true set:
+perception(start,ped).
+
+The false set: 
+[]
+All of 1 sorted repair plans are from: 
+[rename([([ufo],[ped],[+[perception,[med],[ufo]]])]),rename([([under],[ped],[+[perception,[end],[under]]])])].
+[rename([([under],[ped],[+[perception,[end],[under]]])]),rename([([ufo],[ped],[+[perception,[med],[ufo]]])])].
+
+------------------ Solution No. 1 as below------------------
+Repair plans found at Round 2/2 :
+rename([([under],[ped],[+[perception,[end],[under]]])]).
+rename([([ufo],[ped],[+[perception,[med],[ufo]]])]).
+
+Repair plans found at Round 2/3 :
+rename([([ufo],[ped],[+[perception,[med],[ufo]]])]).
+rename([([under],[ped],[+[perception,[end],[under]]])]).
+
+Repair plans found at Round 3/5 :
+rename([([under],[ped],[+[perception,[end],[under]]])]).
+rename([([ufo],[ped],[+[perception,[med],[ufo]]])]).
+
+Repair plans found at Round 3/6 :
+rename([([ufo],[ped],[+[perception,[med],[ufo]]])]).
+rename([([under],[ped],[+[perception,[end],[under]]])]).
+
+
+Repaired Theory: 
+[+nexti(med,end)].
+[+nexti(start,med)].
+[+path(end)].
+[+path(med)].
+[+path(start)].
+[+perception(end,ped)].
+[+perception(med,ped)].
+[+perception(start,ped)].
+[+reachable(\x,\y),-nexti(\x,\y)].
+[+reachable(\x1,\z1),-nexti(\y1,\z1),-reachable(\x1,\y1)].
+[-perception(\p,\q),-perception(\p,\r),- (\q\= \r)].
+
+Solutions are found at rounds:[2/2,2/3,3/5,3/6]

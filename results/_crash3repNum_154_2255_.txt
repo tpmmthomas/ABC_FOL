@@ -1,0 +1,2 @@
+1, [[[merge(path,perception,[[ped]],inc)],[]],[[[end]],[[med]],[[ped]],[[start]],[[ufo]],[[under]]],[],[[+[nexti,[med],[end]]],[+[nexti,[start],[med]]],[+[perception,[end],[ped]]],[+[perception,[end],[under]]],[+[perception,[med],[ped]]],[+[perception,[med],[ufo]]],[+[perception,[start],[ped]]],[+[reachable,vble(x),vble(y)],-[nexti,vble(x),vble(y)]],[+[reachable,vble(x1),vble(z1)],-[nexti,vble(y1),vble(z1)],-[reachable,vble(x1),vble(y1)]]],[[+[perception,[start],[ped]]]],[]]
+

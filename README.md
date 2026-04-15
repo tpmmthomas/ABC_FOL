@@ -24,7 +24,7 @@ The implementations of `ABC_FOL` and `ABC_Datalog` are similar but independent. 
 
 ## How to run the code
 
-Step1. Prepare the theory input file in another folder placed in the project root directory e.g., any file in folder `evaluation`. It has to include a Datalog theory given by _axiom([...])_, and the preferred structure given by _trueSet([...])_ and _falseSet([...])_. Then one can put the items to protect from being changed in _protect([...])_, and heuristics to apply in _heuristics([...])._ Add the following lines at the top of the theory input file:  
+Step1. Prepare the theory input file in another folder placed in the project root directory e.g., any file in folder `cruiseCrash`. It has to include a Datalog theory given by _axiom([...])_, and the preferred structure given by _trueSet([...])_ and _falseSet([...])_. Then one can put the items to protect from being changed in _protect([...])_, and heuristics to apply in _heuristics([...])._ Add the following lines at the top of the theory input file:  
 
 ```prolog
 :- working_directory(_, '../src').
