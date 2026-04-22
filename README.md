@@ -1,48 +1,58 @@
-# ABC_FOL
+# ABC_FOL — Cruise Crash Case Study
 
-The ABC system is a domain-independent system for repairing faulty Datalog-like theories by combining three existing techniques: abduction, belief revision and conceptual change. Accordingly, it is named the ABC repair system (ABC). Given an observed assertion and a current theory, abduction adds axioms, or deletes preconditions, which explain that observation by making the corresponding assertion derivable from the expanded theory. Belief revision incorporates a new piece of information which conflicts with the input theory by deleting old axioms. Conceptual change uses the reformation algorithm for blocking unwanted proofs or unblocking wanted proofs. The former two techniques change an axiom as a whole, while reformation changes the language in which the theory is written. These three techniques are complementary. But they have not previously been combined into one system. We align these three techniques in ABC, which is capable of repairing logical theories with better result than each individual technique alone.
+This branch (`fol.cruise-crash`) accompanies the note *Critiquing the Cruise Crash using Conceptual Change* by Alan Bundy, Gonzalo Aranda and Thomas Wong. It applies the FOL-ABC theory repair system to the 2023 Cruise robotaxi incident analysed by Koopman, in which the vehicle failed to recognise three successive sensor views of the same pedestrian (`Ped` at the crosswalk, `UFO` on the bonnet, and `Under` beneath the chassis) as a single object.
 
-## Desciptions of ABC System
+## The Cruise Crash formulation
 
-This repository contains two implementations of the ABC system, namely ABC_Datalog and ABC_FOL. ABC_Datalog is the original implementation of the ABC system, which is based on Datalog. ABC_FOL is the extension of ABC_Datalog, which is based on First-Order Logic (FOL).  
+The faulty `Robotaxi` theory records the three disjoint perceptions together with a *continuity of existence* principle — that an object present at one location on its path must also be present at the next location. The initial theory is insufficient: the continuity axiom cannot be proved for the second or third view because each view is bound to a distinct constant.
 
-Please refer to `FOL_ABC_thesis.pdf` for details such as the repair plans.
+FOL-ABC is invoked with the heuristics `noAxiomAdd`, `noAss2Rule` and `noExtC2V` (see the paper for details), which together rule out superficial repairs. Under this reduced search space, **constant renaming** emerges as the correct repair: `UFO` and `Under` are merged into `Ped`, yielding a fault-free theory in which all three views refer to the same pedestrian — precisely the conceptual change required by the continuity of existence principle.
 
-## Evaluation theories
+The formalisation lives in [cruiseCrash/scenario1.pl](cruiseCrash/scenario1.pl). Running it produces three output files seen in `results/`:
 
-The folder `evaluation` contains the faulty theories tested in the evaluation in our project. The ones with name *h.pl is a theory with heuristics, while ones with name `*nh.pl` is the corresponding theory without heuristics.  
+- `abc_crash1_..._faultFree.txt` — the repaired, fault-free theory.
+- `abc_crash1_..._record.txt` — the full trace of ABC's repair procedure.
+- `abc_crash1_..._repNum.txt` — the pruned sub-optimal repair candidates.
 
-`example1.pl` through `example5.pl` are the examples used in the thesis for ABC_FOL.
+## How to run the Cruise Crash example
 
-### CogAI2023 example
+**Step 1.** Open a SWI-Prolog console at the project root.
 
-The theory file for the `eggtimer` example, as discussed in the CogAI2023 workshop, can be found in `evaluation/eggtimer.pl` and `evaluation/eggtimer2.pl`.
+**Step 2.** Consult the scenario file:
 
-## Code structure
+```prolog
+1 ?- working_directory(_, './cruiseCrash').
+true.
 
-The implementations of `ABC_FOL` and `ABC_Datalog` are similar but independent. A corresponding folder in `src` contains the code for each implementation. There is a unified interface for calling the program of each implementation, which is `main.pl`. This is the file to be consulted when running the program.  
+2 ?- [scenario1].
+true.
+```
 
-## How to run the code
+The header of `scenario1.pl` already sets the working directory to `../src`, loads `main.pl`, and selects the FOL backend via `logic(fol).`
 
-Step1. Prepare the theory input file in another folder placed in the project root directory e.g., any file in folder `cruiseCrash`. It has to include a Datalog theory given by _axiom([...])_, and the preferred structure given by _trueSet([...])_ and _falseSet([...])_. Then one can put the items to protect from being changed in _protect([...])_, and heuristics to apply in _heuristics([...])._ Add the following lines at the top of the theory input file:  
+**Step 3.** Run the repair:
+
+```prolog
+3 ?- abc.
+```
+
+Inspect the generated files in `src/ABC_FOL/log` to see the repair solutions, the procedure log, and the pruned candidates.
+
+## Writing your own scenario
+
+A theory input file must provide:
+
+- `axiom([...])` clauses for the object theory.
+- `trueRules([...])` for rules that must remain provable (the continuity principle in this case).
+- `trueSet([...])` and `falseSet([...])` for the preferred structure.
+- optional `protect([...])` to shield items from modification, and `heuristics([...])` to restrict the repair search space.
+
+Prepend the following header so the file can be consulted directly:
 
 ```prolog
 :- working_directory(_, '../src').
-:-[main].
+:- [main].
 
-logic(fol). %Choose between fol and datalog
-theoryName(eggtimer). %Provide a name for your theory to identify the output files
-
+logic(fol).
+theoryName(yourTheoryName).
 ```
-
-Step2. In a prolog console, consult the theory input file, for example:
-
-```prolog
-1 ?- working_directory(_,'./evaluation').
-true.
-
-2 ?- [mumh].
-true.
-```
-
-Step3. Call predicate _abc._ The output files include _abc_..._faultFree.txt_ which contains the repair solutions; _abc_..._record.txt_ which has the log information of ABC's procedure, and _abc_..._repNum.txt_ which is the pruned sub-optimal.
